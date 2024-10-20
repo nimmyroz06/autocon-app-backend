@@ -6,6 +6,7 @@ const Bcrypt = require("bcrypt")
 const userModel = require("./models/users")
 const Multer = require("multer")
 const fs = require("fs")
+const path =require("path")
 
 let app = Express()
 
@@ -15,24 +16,24 @@ app.use(Cors())
 Mongoose.connect("mongodb+srv://nimmyroz:roz206@cluster0.svkepzi.mongodb.net/autocon?retryWrites=true&w=majority&appName=Cluster0")
 
 
-const uploadDirectory = 'uploads';
-if (!fs.existsSync(uploadDirectory)) {
-    fs.mkdirSync(uploadDirectory)
+const uploadDir = 'uploads';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
 }
 
 
 const storage = Multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDirectory)
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
+        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
 })
 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
-        cb(null, true)
+        cb(null, true);
     } else {
         cb(new Error('Only PDF files are allowed'), false);
     }
@@ -104,12 +105,27 @@ app.post("/signup", async (req, res) => {
     )
 })
 
-app.post("/upload", upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).send({ message: 'Please upload a valid PDF file (less than 200KB).' })
+app.post("/upload", upload.fields([{ name: 'file1' }, { name: 'file2' }, { name: 'file3' }]), (req, res) => {
+    console.log('Upload request received:', req.files); // Log the uploaded files
+
+    // Check if any files were uploaded
+    if (!req.files || Object.keys(req.files).length === 0) {
+        console.log('No files uploaded');
+        return res.status(400).send({ message: 'No files were uploaded. Please upload valid PDF files (less than 200KB).' });
     }
-    res.status(200).send({ message: 'File uploaded successfully', filePath: req.file.path })
-})
+
+    // Prepare responses for each uploaded file
+    const fileResponses = [];
+
+    // Loop through each file field
+    for (const field in req.files) {
+        req.files[field].forEach(file => {
+            fileResponses.push({ message: 'File uploaded successfully', filePath: file.path });
+        });
+    }
+
+    res.status(200).send(fileResponses); // Return responses for all uploaded files
+});
 
 
 app.use((err, req, res, next) => {
@@ -120,7 +136,8 @@ app.use((err, req, res, next) => {
     } else {
         next();
     }
-})
+});
+
 
 app.listen(3030, () => {
     console.log("server started")
