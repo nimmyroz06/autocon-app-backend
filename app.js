@@ -4,6 +4,8 @@ const Cors = require("cors")
 const Jsonwebtoken = require("jsonwebtoken")
 const Bcrypt = require("bcrypt")
 const userModel = require("./models/users")
+const adminModel = require("./models/admin")
+const uploadedFileSchema = require("./models/renewalupload")
 const Multer = require("multer")
 const fs = require("fs")
 const path =require("path")
@@ -138,6 +140,63 @@ app.use((err, req, res, next) => {
     }
 });
 
+
+
+
+app.post("/adminsignup", async (req, res) => {
+
+    let input = req.body
+    let hashedPassword = Bcrypt.hashSync(req.body.password, 8)
+    console.log(hashedPassword)
+    req.body.password = hashedPassword
+
+    adminModel.find({ email: req.body.email }).then(
+
+        (items) => {
+
+            if (items.length > 0) {
+
+                res.json({ "status": "email id already exist" })
+
+            } else {
+
+
+                let result = new adminModel(input)
+                result.save()
+                res.json({ "status": "success" })
+            }
+
+        }
+    ).catch(
+        (error) => {
+
+        }
+    )
+})
+
+app.post("/adminlogin",async(req,res)=>{
+    let input=req.body
+    let result=userModel.find({email:req.body.email}).then(
+        (items)=>{
+            if (items.length>0) {
+                const passwordValidator=Bcrypt.compareSync(req.body.password,items[0].password)
+                if (passwordValidator) {
+                    Jsonwebtoken.sign({email:req.body.email},"autocon",{expiresIn:"1d"},(error,token)=>{
+                        if (error) {
+                            res.json({"status":"error","ErrorMessage":error})
+                        } else {
+                            res.json({"status":"success","token":token,"userid":items[0]._id})
+                        }
+                    })
+                } else {
+                    res.json({"status":"Incorrect Password"})
+                }
+            } else {
+                res.json({"status":"Invalid Email Id"})
+            }
+        }
+    ).catch()
+})
 
 app.listen(3030, () => {
     console.log("server started")
