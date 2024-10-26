@@ -18,7 +18,7 @@ app.use(Express.json())
 app.use(Cors())
 app.use('/uploads', Express.static(path.join(__dirname, 'uploads')));
 
-Mongoose.connect("mongodb+srv://nimmyroz:roz206@cluster0.svkepzi.mongodb.net/demoautocon?retryWrites=true&w=majority&appName=Cluster0")
+Mongoose.connect("mongodb+srv://nimmyroz:roz206@cluster0.svkepzi.mongodb.net/autocon?retryWrites=true&w=majority&appName=Cluster0")
 
 
 const uploadDir = 'uploads';
